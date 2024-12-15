@@ -21,6 +21,10 @@ Download the .exe then run it. It should auto-detect if you log into your league
 
 ## Demo
 
+
+https://github.com/user-attachments/assets/d37171f3-1599-411e-acf0-705f6e0f181e
+
+
 ## FAQ
 
 ### Will this get me banned?
