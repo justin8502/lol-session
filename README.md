@@ -19,6 +19,11 @@ Download the .exe then run it. It should auto-detect if you log into your league
 
 ## Demo
 
+<video width="640" autoplay loop muted>
+  <source src="./media/demo.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
 ## FAQ
 
 ### Will this get me banned?
