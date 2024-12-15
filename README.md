@@ -6,6 +6,8 @@ This is a simple app to help twitch streamers track their league play session au
 
 ### Running The Program
 
+Click [HERE](https://github.com/justin8502/lol-session/releases/tag/build) to go directly to the latest release
+
 Download the .exe then run it. It should auto-detect if you log into your league client, but it is more reliable if you open the program after the league client is already open. I've attached a screenshot for OBS, but it should be similar on any stream manager. You can set a custom output file, but the default will be YourDesktop/LoLSession.txt. Settings should auto-save. 
 
 ### Adding Source (OBS)
