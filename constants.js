@@ -1,1 +1,0 @@
-export const command = "wmic PROCESS WHERE name='LeagueClientUx.exe' GET commandline /format:list";

@@ -20,5 +20,8 @@
   },
   "build": {
     "appId": "LoLSession"
+  },
+  "win": {
+    "icon": "./icon.png"
   }
 }

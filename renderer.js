@@ -50,5 +50,11 @@ window.api.mainSendOnceLoL((value) => {
 })
 
 window.api.mainSendTextReset((value) => {
-  document.getElementById("formatter").value = value;
+  document.getElementById("formatter").value = value["defaultString"];
+  document.getElementById("output-pathname").innerText = value["storageLocation"];
+  document.getElementById("output-location-raw").value = value["storageLocation"];
+})
+
+window.api.mainSendConnectionReset((value) => {
+  document.getElementById("status-message").innerText = "NOT CONNECTED";
 })

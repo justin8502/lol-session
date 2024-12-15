@@ -20,16 +20,16 @@ const defaultValues = {
 }
 
 const rankMap = {
-  CHALLENGER: 2800,
-  GRANDMASTER: 2800,
-  MASTER: 2800,
-  DIAMOND: 2400,
-  EMERALD: 2000,
-  PLATINUM: 1600,
-  GOLD: 1200,
-  SILVER: 800,
-  BRONZE: 400,
-  IRON: 0,
+  "CHALLENGER": 2800,
+  "GRANDMASTER": 2800,
+  "MASTER": 2800,
+  "DIAMOND": 2400,
+  "EMERALD": 2000,
+  "PLATINUM": 1600,
+  "GOLD": 1200,
+  "SILVER": 800,
+  "BRONZE": 400,
+  "IRON": 0,
 }
 
 const divisionMap = {
@@ -40,7 +40,7 @@ const divisionMap = {
 }
 
 const phaseMap = {
-  "None": "", 
+  "None": "",
   "Lobby": "",
   "Matchmaking": "In Queue",
   "ReadyCheck": "In Queue",
@@ -72,7 +72,7 @@ function convertRankToMMR(tier, division, leaguePoints) {
 }
 
 function convertRankStringToMMR(rank) {
-  if (rank === "UNRANKED") { return 0 };
+  if (rank === "UNRANKED" || rank === "NA") { return 0 };
   const [tier, division, leaguePoints] = rank.replace(/"/g, "").replace(/'/g, "").replace(/\(|\)/g, "").split(" ");
   return rankMap[tier] + (divisionMap[division] * 100) + parseInt(leaguePoints);
 }
@@ -89,19 +89,20 @@ function LCUEOGStatsUrl(port) {
 }
 
 var wins = '0',
-    losses = '0',
-    LPChange = '0',
-    currentRank = "NA",
-    sessionStartRank = "NA",
-    sessionPeakRank = "NA",
-    sessionFloorRank = "NA";
+  losses = '0',
+  LPChange = '0',
+  currentRank = "NA (0 LP)",
+  sessionStartRank = "NA (0 LP)",
+  sessionPeakRank = "NA (0 LP)",
+  sessionFloorRank = "NA (0 LP)";
 
 let internalWins = undefined;
 let internalLosses = undefined;
 
 let didUpdateWinLoss = false;
+let didInitialize = false;
 
-String.prototype.interpolate = function(params) {
+String.prototype.interpolate = function (params) {
   const names = Object.keys(params);
   const vals = Object.values(params);
   return new Function(...names, `return \`${this}\`;`)(...vals);
@@ -109,25 +110,16 @@ String.prototype.interpolate = function(params) {
 
 function generateTextToWrite(stringToFormat, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank) {
   console.log("Writing with the following format:" + stringToFormat);
-  console.log("Variables:" + wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
-  // console.log((stringToFormat || "").interpolate({
-  //   wins,
-  //   losses,
-  //   LPChange,
-  //   currentRank,
-  //   sessionStartRank,
-  //   sessionPeakRank,
-  //   sessionFloorRank
-  // }));
- return (stringToFormat || "").interpolate({
-  wins,
-  losses,
-  LPChange,
-  currentRank,
-  sessionStartRank,
-  sessionPeakRank,
-  sessionFloorRank
-});
+  console.log("Variables:" + wins, losses, LPChange > 0 ? `+${LPChange}` : LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
+  return (stringToFormat || "").interpolate({
+    wins,
+    losses,
+    LPChange: LPChange > 0 ? `+${LPChange}` : LPChange,
+    currentRank,
+    sessionStartRank,
+    sessionPeakRank,
+    sessionFloorRank
+  });
 }
 
 async function checkIfLoLRunning() {
@@ -142,7 +134,7 @@ async function checkIfLoLRunning() {
 }
 
 async function pullPortAndToken() {
-  return new Promise((resolve, reject) => { 
+  return new Promise((resolve, reject) => {
     child_process.exec(command, (error, stdout, stderr) => {
       // console.log(error, stdout, stderr);
       const appPortMatches = new Set(stdout.match(/--app-port=[0-9]+/g) || []);
@@ -166,6 +158,7 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
       enableRemoteModule: true
     },
+    icon: "./icon.png",
     autoHideMenuBar: true
   })
 
@@ -192,15 +185,12 @@ function requestHandler(url, appToken) {
 
 async function attemptToPullRank(port, token, queueType) {
   try {
-    // console.log(LCURankUrl(port), token);
     json = await requestHandler(LCURankUrl(port), token);
-    console.log(json["queueMap"]);
-    const [tier, division, leaguePoints] = [json["queueMap"][queueType]["tier"], 
-      json["queueMap"][queueType]["division"], json["queueMap"][queueType]["leaguePoints"]]
+    const [tier, division, leaguePoints] = [json["queueMap"][queueType]["tier"],
+    json["queueMap"][queueType]["division"], json["queueMap"][queueType]["leaguePoints"]]
     const rankString = (tier ? tier + " " : "") + division + " (" + leaguePoints + " LP)";
     const fetchedWins = json["queueMap"][queueType]["wins"];
     const fetchedLosses = internalLosses = json["queueMap"][queueType]["losses"];
-    console.log(tier, division, leaguePoints);
     if (internalWins === undefined) {
       internalWins = json["queueMap"][queueType]["wins"];
     }
@@ -214,8 +204,8 @@ async function attemptToPullRank(port, token, queueType) {
       leaguePoints,
       rankMMR,
       rankString,
-      fetchedWins, 
-      fetchedLosses, 
+      fetchedWins,
+      fetchedLosses,
     }
   } catch (e) {
     console.log(e);
@@ -231,20 +221,22 @@ async function attemptToPullRank(port, token, queueType) {
   }
 }
 
-async function generateEOGStatsData(data) {
-  try {
-    const team1 = data["teams"][0]["players"];
-    const team2 = data["teams"][1]["players"];
-    const summonerName = data["localPlayer"]["summonerName"];
-    console.log(team1, team2, summonerName);
-  } catch (e) {
-    console.log(e);
-  }
-}
+// async function generateEOGStatsData(data) {
+//   try {
+//     const team1 = data["teams"][0]["players"];
+//     const team2 = data["teams"][1]["players"];
+//     const summonerName = data["localPlayer"]["summonerName"];
+//     console.log(team1, team2, summonerName);
+//   } catch (e) {
+//     console.log(e);
+//   }
+// }
 
 async function relayInitialToHTML() {
   const storedSettings = await settings.get();
-  win.webContents.send('main-send-once', storedSettings);
+  setTimeout(() => {
+    win.webContents.send('main-send-once', storedSettings);
+  }, 600);
 }
 
 async function relayTextAreaReset(baseString) {
@@ -252,7 +244,7 @@ async function relayTextAreaReset(baseString) {
 }
 
 async function relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank) {
-  win.webContents.send('main-send-once-lol', { currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank} );
+  win.webContents.send('main-send-once-lol', { currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank });
 }
 
 async function setupSources() {
@@ -260,7 +252,8 @@ async function setupSources() {
   console.log(res);
   fetchGenerateString = await settings.get("defaultString");
   fetchLocationString = await settings.get("storageLocation");
-  
+  console.log(fetchLocationString);
+
   await relayInitialToHTML();
   if (res?.port && res?.token) {
     fetchQueueString = await settings.get("queueType");
@@ -272,65 +265,70 @@ async function setupSources() {
     sessionPeakRank = rankString;
     sessionFloorRank = rankString;
     relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
-    console.log(internalWins, internalLosses);
-    console.log(fetchLocationString);
-    fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, 0, 0, 0, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => {});
+    fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, 0, 0, 0, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => { });
     if (ws) {
       ws.close();
     }
-    ws = new NodeWebSocket(`wss://127.0.0.1:${res.port}/`, 
+    ws = new NodeWebSocket(`wss://127.0.0.1:${res.port}/`,
       {
         headers: {
-        Authorization: res.token,
-      },
-      rejectUnauthorized: false
+          Authorization: res.token,
+        },
+        rejectUnauthorized: false
       });
     ws.on("open", () => {
       ws?.send(`[5, "OnJsonApiEvent"]`);
     })
     // console.log(ws);
-    ws.on("message", async(data) => {
+    ws.on("message", async (data) => {
       const message = data.toString();
       if (!message) {
         return;
       }
       try {
-        const [opCode, eventName, eventData] = JSON.parse(message);
-        const { data, eventType, uri } = eventData || {};
+        const [_opCode, _eventName, eventData] = JSON.parse(message);
+        const { data, _eventType, uri } = eventData || {};
         if (uri === "/lol-gameflow/v1/session") {
-          console.log(wins, losses, LPChange);
+          // console.log(wins, losses, LPChange);
           // console.log(data, eventType, uri);
           console.log(data?.phase);
           if (data?.phase === "EndOfGame" || data?.phase === "PreEndOfGame" || data?.phase === "WaitingForStats") {
-            console.log("pull here? update here?") 
+            console.log("EndOfGame")
             fetchQueueString = await settings.get("queueType");
             const { tier, division, leaguePoints, rankString, rankMMR, fetchedWins, fetchedLosses } = await attemptToPullRank(res.port, res.token, fetchQueueString);
             const convertedMMR = currentRank && convertRankStringToMMR(currentRank);
             console.log(rankMMR, convertedMMR);
             if (rankMMR !== convertRankStringToMMR(currentRank)) {
+              // Was unranked
+              if (sessionStartRank === "NA (0 LP)") {
+                currentRank = rankString;
+                sessionStartRank = rankString;
+                sessionPeakRank = rankString;
+                sessionFloorRank = rankString;
+              } else {
+                if (convertRankStringToMMR(sessionPeakRank) < rankMMR) {
+                  sessionPeakRank = rankString;
+                }
+                if (convertRankStringToMMR(sessionFloorRank) > rankMMR) {
+                  sessionFloorRank = rankString;
+                }
+                LPChange = convertRankStringToMMR(rankString) - convertRankStringToMMR(sessionStartRank);
+                console.log(`WINS: ${wins} LOSSES: ${losses}`);
+                currentRank = rankString;
+              }
               // const didWin = rankMMR > convertRankStringToMMR(currentRank);
               // if (didWin) {
               //   wins = parseInt(wins) + 1; 
               // } else {
               //   losses = parseInt(losses) + 1;
               // }
-              if (convertRankStringToMMR(sessionPeakRank) < rankMMR) {
-                sessionPeakRank = rankString;
-              }
-              if (convertRankStringToMMR(sessionFloorRank) > rankMMR) {
-                sessionFloorRank = rankString;
-              }
-              LPChange = convertRankStringToMMR(rankString) - convertRankStringToMMR(sessionStartRank);
-              console.log(`WINS: ${wins} LOSSES: ${losses}`);
-              currentRank = rankString;
-              didUpdateWinLoss = true;
-            } 
+            }
             wins = fetchedWins - internalWins;
             losses = fetchedLosses - internalLosses;
             fetchGenerateString = await settings.get("defaultString");
             fetchLocationString = await settings.get("storageLocation");
             relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
-            fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => {});
+            fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => { });
             // else if (!didUpdateWinLoss) {
             //   console.log("LP did not change. Attempt using end of stats block instead. ");
             //   EOGjson = await requestHandler(LCUEOGStatsUrl(res.port), res.token);
@@ -349,7 +347,7 @@ async function setupSources() {
       } catch (e) {
         console.log(e);
       }
-      
+
     });
   }
 }
@@ -359,17 +357,37 @@ app.on("certificate-error", (event, webContents, url, error, certificate, callba
   callback(true);
 })
 
-app.whenReady().then(() => {
-  initSettings();
-  createWindow()
-  console.log(checkIfLoLRunning());
-  setupSources();
+async function driver() {
 
-  console.log(app.getPath("userData"));
+  initSettings();
+  createWindow();
+
+  let isLolRunning = await checkIfLoLRunning();
+  // If LOL is running just auto grab
+  if (isLolRunning) {
+    setupSources();
+    didInitialize = true;
+  }
+  setInterval(async function () {
+    isLolRunning = await checkIfLoLRunning();
+    if (isLolRunning && !didInitialize) {
+      setTimeout(() => {
+        setupSources();
+      }, 6000)
+      didInitialize = true;
+    } else if (!isLolRunning) {
+      didInitialize = false;
+      await win.webContents.send('main-send-connection-reset', defaultValues);
+    }
+  }, 5000);
+}
+
+app.whenReady().then(async () => {
+  driver();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+      driver();
     }
   })
 })
@@ -389,14 +407,14 @@ ipcMain.handle('electronStoreSet', async (event, data) => {
   console.log(data);
   const locationString = await settings.get("storageLocation");
   fs.writeFile(locationString, generateTextToWrite(
-    data.defaultString, 
-    wins, 
-    losses, 
-    LPChange, 
-    currentRank, 
-    sessionStartRank, 
-    sessionPeakRank, 
-    sessionFloorRank), () => {});
+    data.defaultString,
+    wins,
+    losses,
+    LPChange,
+    currentRank,
+    sessionStartRank,
+    sessionPeakRank,
+    sessionFloorRank), () => { });
 });
 
 ipcMain.handle('updateStorageLocation', async (event, data) => {
@@ -404,17 +422,19 @@ ipcMain.handle('updateStorageLocation', async (event, data) => {
   const locationString = await settings.get("storageLocation");
   const defaultString = await settings.get("defaultString");
   fs.writeFile(locationString, generateTextToWrite(
-    defaultString, 
-    wins, 
-    losses, 
-    LPChange, 
-    currentRank, 
-    sessionStartRank, 
-    sessionPeakRank, 
-    sessionFloorRank), () => {});
+    defaultString,
+    wins,
+    losses,
+    LPChange,
+    currentRank,
+    sessionStartRank,
+    sessionPeakRank,
+    sessionFloorRank), () => { });
 });
 
 ipcMain.handle('updateValues', async (event, data) => {
+  internalWins = internalWins - (data["wins"] - wins);
+  internalLosses = internalLosses - (data["losses"] - losses);
   wins = data["wins"];
   losses = data["losses"];
   LPChange = data["LPChange"];
@@ -425,19 +445,19 @@ ipcMain.handle('updateValues', async (event, data) => {
   const locationString = await settings.get("storageLocation");
   const defaultString = await settings.get("defaultString");
   fs.writeFile(locationString, generateTextToWrite(
-    defaultString, 
-    wins, 
-    losses, 
-    LPChange, 
-    currentRank, 
-    sessionStartRank, 
-    sessionPeakRank, 
-    sessionFloorRank), () => {});
+    defaultString,
+    wins,
+    losses,
+    LPChange,
+    currentRank,
+    sessionStartRank,
+    sessionPeakRank,
+    sessionFloorRank), () => { });
 });
 
 ipcMain.handle('reset', async (event, data) => {
   await settings.set(defaultValues);
-  await win.webContents.send('main-send-text-reset', defaultValues["defaultString"]);
+  await win.webContents.send('main-send-text-reset', defaultValues);
   resetAllVariables();
 });
 
@@ -469,6 +489,6 @@ async function resetAllVariables() {
   wins = 0;
   losses = 0;
   LPChange = 0;
-  fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => {});
+  fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => { });
   relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
 }
