@@ -43,6 +43,9 @@ window.api.mainSendOnce((value) => {
 
 window.api.mainSendOnceLoL((value) => {
   document.getElementById("status-message").innerText = "CONNECTED";
+  document.getElementById("wins").value = value["wins"];
+  document.getElementById("losses").value = value["losses"];
+  document.getElementById("lp-change").value = value["LPChange"];
   document.getElementById("current-rank").value = value["currentRank"];
   document.getElementById("session-start-rank").value = value["sessionStartRank"];
   document.getElementById("session-peak-rank").value = value["sessionPeakRank"];

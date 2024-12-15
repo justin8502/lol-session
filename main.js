@@ -61,9 +61,6 @@ async function initSettings() {
   if (!storedString) {
     await settings.set(defaultValues);
   }
-  // const storedString2 = await settings.get("defaultString");
-  // const storedQueue2 = await settings.get("queueType");
-  // console.log(storedString2, storedQueue2);
 }
 
 function convertRankToMMR(tier, division, leaguePoints) {
@@ -190,7 +187,7 @@ async function attemptToPullRank(port, token, queueType) {
     json["queueMap"][queueType]["division"], json["queueMap"][queueType]["leaguePoints"]]
     const rankString = (tier ? tier + " " : "") + division + " (" + leaguePoints + " LP)";
     const fetchedWins = json["queueMap"][queueType]["wins"];
-    const fetchedLosses = internalLosses = json["queueMap"][queueType]["losses"];
+    const fetchedLosses = json["queueMap"][queueType]["losses"];
     if (internalWins === undefined) {
       internalWins = json["queueMap"][queueType]["wins"];
     }
@@ -211,10 +208,10 @@ async function attemptToPullRank(port, token, queueType) {
     console.log(e);
     return {
       tier: "",
-      division: "",
-      leaguePoints: "",
+      division: "NA",
+      leaguePoints: 0,
       rankMMR: 0,
-      rankString: "",
+      rankString: "NA (0 LP)",
       fetchedWins: 0,
       fetchedLosses: 0,
     }
@@ -239,12 +236,8 @@ async function relayInitialToHTML() {
   }, 600);
 }
 
-async function relayTextAreaReset(baseString) {
-  win.webContents.send('main-send-text-reset', baseString);
-}
-
-async function relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank) {
-  win.webContents.send('main-send-once-lol', { currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank });
+async function relayLoLAPIToHTML(wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank) {
+  win.webContents.send('main-send-once-lol', { wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank });
 }
 
 async function setupSources() {
@@ -264,7 +257,7 @@ async function setupSources() {
     sessionStartRank = rankString;
     sessionPeakRank = rankString;
     sessionFloorRank = rankString;
-    relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
+    relayLoLAPIToHTML(wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
     fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, 0, 0, 0, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => { });
     if (ws) {
       ws.close();
@@ -327,7 +320,7 @@ async function setupSources() {
             losses = fetchedLosses - internalLosses;
             fetchGenerateString = await settings.get("defaultString");
             fetchLocationString = await settings.get("storageLocation");
-            relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
+            relayLoLAPIToHTML(wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
             fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => { });
             // else if (!didUpdateWinLoss) {
             //   console.log("LP did not change. Attempt using end of stats block instead. ");
@@ -339,11 +332,11 @@ async function setupSources() {
             //     didUpdateWinLoss = true;
             //   }
             //   // Check using EOG stats block if loss registered. 
-            // }
+            }
           } else {
             didUpdateWinLoss = false;
           }
-        }
+        // }
       } catch (e) {
         console.log(e);
       }
@@ -490,5 +483,5 @@ async function resetAllVariables() {
   losses = 0;
   LPChange = 0;
   fs.writeFile(fetchLocationString, generateTextToWrite(fetchGenerateString, wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank), () => { });
-  relayLoLAPIToHTML(currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
+  relayLoLAPIToHTML(wins, losses, LPChange, currentRank, sessionStartRank, sessionPeakRank, sessionFloorRank);
 }
