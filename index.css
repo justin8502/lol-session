@@ -1,0 +1,60 @@
+body {
+  font-size: 12px;
+  font-family: 'Roboto', sans-serif;
+}
+
+#formatter {
+  font-size: 20px;
+  height: 200px;
+  width: 360px;
+  font-family: 'Roboto', sans-serif;
+}
+
+#wins, #losses, #lp-change {
+  width: 40px;
+}
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.updater {
+  width: 300px;
+  font-size: 16px;
+}
+
+.updater .wins-losses {
+  display: flex;
+  justify-content: space-between;
+}
+
+.updater .rank-field {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.updater p {
+  font-size: 12px;
+}
+
+.status {
+  display: flex;
+}
+
+.status #status-message {
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+.file-input {
+  width: 300px;
+  display: flex;
+  justify-content: space-between;
+}
+
+#output-location-raw {
+  width: 220px;
+}

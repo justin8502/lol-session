@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy"
+      content="
+        style-src   'self' https://fonts.googleapis.com;
+        font-src    'self' data: https://fonts.gstatic.com;"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <title>LoL Session Tracker</title>
+  </head>
+  <body>
+    <div class="status"><p>STATUS: </p><p id="status-message">NOT CONNECTED</p></div>
+    <label for="queue-type">Queue Type:</label>
+    <select id="queue-type">
+      <option value="RANKED_SOLO_5x5">Ranked Solo</option>
+      <option value="RANKED_FLEX_SR">Ranked Flex</option>
+      <option value="RANKED_TFT">Ranked TFT</option>
+      <option value="RANKED_TFT_DOUBLE_UP">Ranked TFT Double Up</option>
+      <option value="RANKED_TFT_TURBO">Ranked TFT Turbo</option>
+    </select>
+    <div class="output-header"><h2>Output</h2> <button id="reset-button">Reset</button></div>
+    <textarea id='formatter'>${wins} - ${losses}
+LP - ${LPChange}
+Current Rank - ${currentRank}
+Starting Rank - ${sessionStartRank}
+Highest Rank - ${sessionPeakRank}
+Lowest Rank - ${sessionFloorRank}</textarea>
+    <h2>Update Values</h2>
+    <div class="updater">
+      <div class="wins-losses">
+        <div>
+          <label for="wins">Wins: </label>
+          <input type="number" id="wins" value="0"/>
+        </div>
+        <div>
+          <label for="losses">Losses: </label>
+          <input type="number" id="losses" value="0"/>
+        </div>
+        <div>
+          <label for="lp-change">LP: </label>
+          <input type="number" id="lp-change" value="0"/>
+        </div>
+      </div>
+      <div class="rank-field">
+        <label for="current-rank">Current Rank</label>
+        <input type="string" id="current-rank" value="NA (0LP)"/>
+      </div>
+      <div class="rank-field">
+        <label for="session-start-rank">Session Start</label>
+        <input type="string" id="session-start-rank" value="NA (0LP)"/>
+      </div>
+      <div class="rank-field">
+        <label for="session-peak-rank">Session Peak</label>
+        <input type="string" id="session-peak-rank" value="NA (0LP)"/>
+      </div>
+      <div class="rank-field">
+        <label for="session-low-rank">Session Lowest</label>
+        <input type="string" id="session-low-rank" value="NA (0LP)"/>
+      </div>
+      <p>Are you sure this is right? If it's incorrect the program will crash.</p>
+      <button id="update-button">Update</button>
+    </div>
+  
+    <h2>Write to different File</h2>
+      
+    <div class="file-input"><input type="string" id="output-location-raw"><button id="output-location">Update</button></div>
+    <p>CURRENT LOCATION IS: <p id="output-pathname"></p></p>
+    <!-- Adding Individual Renderer Process JS File -->
+  </body>
+  <script src="./renderer.js"></script>
+</html>
